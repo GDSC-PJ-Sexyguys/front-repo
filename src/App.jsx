@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./App.css"; // CSS 파일 import
-// 구글 아이콘 이미지 import
+import logo from "./logo.png";
 //import axios from "axios"; // Axios import
 
 function App() {
@@ -13,6 +13,7 @@ function App() {
   return (
     <div className="container">
       <header className="header">
+        <img src={logo} className="logo" alt="Logo" />
         <h1>강의실 예약 시스템</h1>
       </header>
       <div className="menu">
@@ -44,63 +45,93 @@ function App() {
     </div>
   );
 }
+
 function BigReservation() {
-  // 고정된 값 (이미지에 나와 있는 대로)
-  // 드래그 기능이 있으니 크기를 크게하고 component크기를 딱 맞게
-  const roomName = "제1열람실";
-  const totalSeats = 407;
-  const reservedSeats = 54;
-  const availableSeats = totalSeats - reservedSeats;
-  const percentage = (reservedSeats / totalSeats) * 100;
+  const [modalInfo, setModalInfo] = useState({
+    isOpen: false,
+    title: "",
+    content: null,
+  });
+
+  const rooms = [
+    { roomName: "제1열람실", totalSeats: 407, reservedSeats: 54 },
+    { roomName: "제2열람실", totalSeats: 300, reservedSeats: 75 },
+  ];
+
+  const openModal = (title, content) => {
+    setModalInfo({ isOpen: true, title, content });
+    document.body.style.overflow = "hidden";
+  };
+
+  const closeModal = () => {
+    setModalInfo({ isOpen: false, title: "", content: null });
+    document.body.style.overflow = "auto";
+  };
 
   return (
-    <div className="seat-reservation">
-      <svg className="seat-circle" viewBox="0 0 60 60" width="150" height="150">
-        <circle className="background-circle" cx="18" cy="18" r="15.915" />
-        <circle
-          className="progress-circle"
-          cx="18"
-          cy="18"
-          r="15.915"
-          strokeDasharray={`${percentage} ${100 - percentage}`}
-          strokeDashoffset="25"
+    <div className="reservations-container">
+      {rooms.map((room, index) => (
+        <ReservationCircle
+          key={index}
+          roomName={room.roomName}
+          totalSeats={room.totalSeats}
+          reservedSeats={room.reservedSeats}
+          onClick={() =>
+            openModal(
+              room.roomName,
+              `${room.reservedSeats} / ${room.totalSeats} seats reserved`,
+            )
+          }
         />
-      </svg>
-      <div className="seat-text">
-        <div className="available-seats">{availableSeats}</div>
-        <div className="seat-info">
-          {reservedSeats} / {totalSeats}
-        </div>
-      </div>
-      <div className="room-name">{roomName}</div>
+      ))}
+      {modalInfo.isOpen && (
+        <Modal
+          title={modalInfo.title}
+          content={modalInfo.content}
+          onClose={closeModal}
+        />
+      )}
     </div>
   );
 }
 function SmallReservation() {
-  // 고정된 값 (이미지에 나와 있는 대로)
-  const roomName = "제1열람실";
-  const totalSeats = 407;
-  const reservedSeats = 54;
+  const rooms = [
+    { roomName: "제3열람실", totalSeats: 200, reservedSeats: 100 },
+    { roomName: "제4열람실", totalSeats: 150, reservedSeats: 40 },
+  ];
+
+  return (
+    <div className="reservations-container">
+      {rooms.map((room, index) => (
+        <ReservationCircle key={index} {...room} />
+      ))}
+    </div>
+  );
+}
+
+function ReservationCircle({ roomName, totalSeats, reservedSeats }) {
   const availableSeats = totalSeats - reservedSeats;
   const percentage = (reservedSeats / totalSeats) * 100;
 
   return (
     <div className="seat-reservation">
-      <svg className="seat-circle" viewBox="0 0 36 36">
-        <circle className="background-circle" cx="18" cy="18" r="15.915" />
-        <circle
-          className="progress-circle"
-          cx="18"
-          cy="18"
-          r="15.915"
-          strokeDasharray={`${percentage} ${100 - percentage}`}
-          strokeDashoffset="25"
-        />
-      </svg>
-      <div className="seat-text">
-        <div className="available-seats">{availableSeats}</div>
-        <div className="seat-info">
-          {reservedSeats} / {totalSeats}
+      <div className="circle-container">
+        <svg className="seat-circle" viewBox="0 0 36 36">
+          <circle className="background-circle" cx="18" cy="18" r="15.915" />
+          <circle
+            className="progress-circle"
+            cx="18"
+            cy="18"
+            r="15.915"
+            strokeDasharray={`${percentage} ${100 - percentage}`}
+            strokeDashoffset="25"
+          />
+        </svg>
+        <div className="seat-text">
+          <div className="available-seats">{availableSeats}</div>
+          <div className="seat-info">
+            {reservedSeats} / {totalSeats}
+          </div>
         </div>
       </div>
       <div className="room-name">{roomName}</div>
