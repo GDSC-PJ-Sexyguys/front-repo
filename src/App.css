@@ -1,2 +1,407 @@
-main {
+/* App.css */
+
+/* 기본 스타일 */
+body, html {
+  height: 100%;
+  margin: 0;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+#root {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  overflow-y: auto; /* 세로 스크롤을 허용 */
+}
+
+.container {
+  width: 100%;
+  max-width: 400px;
+  height: 100%;
+  background-color: #ffffff; /* 배경색 */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+/* 헤더 스타일 */
+.header {
+  width: 110%;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* 로고와 제목을 가운데 정렬 */
+  margin-bottom: 0px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #235694;
+}
+
+.header img {
+  max-width: 50px;
+  margin-right: 10px;
+}
+
+.header h1 {
+  font-size: 1.5em;
+  margin: 0;
+}
+
+/* 메뉴 스타일 */
+.menu {
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 20px; /* 메뉴와 아래 콘텐츠 사이의 간격 */
+}
+
+.menu-item {
+  flex: 1;
+  text-align: center;
+  padding: 15px 0;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  border-bottom: 1px solid #e0e0e0 
+}
+
+.menu-item:hover {
+  background-color: #e0e0e0;
+}
+
+/* 활성화된 메뉴 아이템 스타일 */
+.menu-item.active {
+  font-weight: bold; /* 활성화된 메뉴 아이템의 글자 굵기 */
+  border-bottom: 2px solid #235694; /* 아래 경계선 */
+}
+
+/* 콘텐츠 영역 스타일 */
+.content {
+  width: 100%;
+  padding: 20px 0;
+  text-align: center; /* 콘텐츠 내용 가운데 정렬 */
+  flex: 1; /* 남은 공간을 채우기 위해 flex 설정 */
+  overflow-y: auto; /* 내용이 넘칠 경우 스크롤 허용 */
+  scrollbar-width: thin; /* 스크롤바 너비 설정 */
+  scrollbar-color: #e3e3e3 transparent; /* 스크롤바 색상 설정 */
+}
+
+.content::-webkit-scrollbar {
+  width: 8px; /* 스크롤바 너비 */
+}
+
+/* 게임 컨테이너 스타일 */
+.game-container {
+  display: flex;
+  flex-direction: column; /* 세로로 배치 */
+  align-items: center; /* 가운데 정렬 */
+  gap: 40px; /* 간격 설정 */
+}
+
+.game-item {
+  width: 90%;
+  height: 240px; /* 높이 설정 */
+  background-color: #cfe0f7;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.game-item.larger {
+  height: 240px; /* 크기 조정 */
+}
+
+/* 상품 컨테이너 스타일 */
+.product-container {
+  display: flex;
+  flex-direction: column; /* 세로로 배치 */
+  align-items: center; /* 가운데 정렬 */
+  gap: 40px; /* 간격 설정 */
+}
+
+.product-item {
+  width: 90%;
+  height: 240px; /* 높이 설정 */
+  background-color: #cfe0f7;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.product-item.larger {
+  height: 240px; /* 크기 조정 */
+}
+
+/* 내정보 */
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 8px;
+  width: 300px;
+  margin: auto;
+}
+
+.user-info h2 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #333;
+}
+
+.input-field {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.login-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #235694;
+  color: white;
+  font-size: 18px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.login-button:hover {
+  background-color: #0d3668;
+}
+/* 모달 관련 스타일 */
+.modal-bg {
+  position: fixed; /* 고정 위치 */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* 반투명 검은 배경 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background-color: #fff; /* 모달 배경색 */
+  padding: 20px;
+  width: 80%;
+  max-width: 400px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ccc; /* 아래 테두리 */
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5em;
+}
+
+.close {
+  cursor: pointer;
+  font-size: 1.5em;
+  color: #aaa;
+}
+
+.close:hover {
+  color: #555;
+}
+
+.modal-content {
+  padding: 20px;
+}
+/*구매 버튼 */
+/* Pmodal.css */
+
+.pmodal-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pmodal {
+  background-color: #fff;
+  padding: 20px;
+  width: 80%;
+  max-width: 400px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.pmodal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.pmodal-header h2 {
+  margin: 0;
+  font-size: 1.5em;
+}
+
+.pclose {
+  cursor: pointer;
+  font-size: 1.5em;
+  color: #aaa;
+}
+
+.pclose:hover {
+  color: #555;
+}
+
+.pmodal-content {
+  padding: 20px;
+}
+
+.purchase-button {
+  width: 100%;
+  height: 40px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.purchase-button:hover {
+  background-color: #0056b3;
+}
+/*카드 게임 구현 */
+.memory-game {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.cards-container {
+  display: grid;
+  justify-content: center;
+  grid-template-columns: repeat(4, 1fr);
+  grid-gap: 10px;
+  width: 80%;
+  max-width: 600px;
+  margin: auto;
+}
+
+.card {
+  width: 100%;
+  padding-top: 100%; /* Aspect Ratio 1:1 */
+  position: relative;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  overflow: hidden;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+}
+
+.card img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.concentration-game .card.flipped {
+  background-color: #a1c6f7;
+  color: white;
+}
+
+.concentration-game .card:hover {
+  background-color: #ddd;
+}
+/*구매 페이지 포인트 */
+.purchase-container {
+  position: relative;
+}
+
+.points-container {
+  position: absolute;
+  right: 20px;
+  background-color: #cfe0f7;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.points-box {
+  display: flex;
+  align-items: center;
+}
+
+.points-number {
+  font-weight: bold;
+  margin-left: 5px;
+}
+
+.seat-reservation {
+  text-align: center;
+  width: 150px;
+}
+
+.seat-circle {
+  width: 100px;
+  height: 100px;
+}
+
+.background-circle {
+  fill: transparent;
+  stroke: #eee;
+  stroke-width: 2;
+}
+
+.progress-circle {
+  fill: transparent;
+  stroke: #4dabf7;
+  stroke-width: 2;
+  transition: stroke-dasharray 0.3s ease;
+}
+
+.seat-text {
+  position: relative;
+  top: -70px;
+  font-size: 1.5em;
+  color: #4dabf7;
+}
+
+.available-seats {
+  font-size: 1.5em;
+  color: #4dabf7;
+}
+
+.seat-info {
+  font-size: 0.8em;
+  color: #666;
+}
+
+.room-name {
+  margin-top: 5px;
+  font-size: 1em;
+  color: #333;
 }
