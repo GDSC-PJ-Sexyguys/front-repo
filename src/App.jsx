@@ -95,26 +95,59 @@ function BigReservation() {
   );
 }
 function SmallReservation() {
+  const [modalInfo, setModalInfo] = useState({
+    isOpen: false,
+    title: "",
+    content: null,
+  });
   const rooms = [
     { roomName: "제3열람실", totalSeats: 200, reservedSeats: 100 },
     { roomName: "제4열람실", totalSeats: 150, reservedSeats: 40 },
   ];
 
+  const openModal = (title, content) => {
+    setModalInfo({ isOpen: true, title, content });
+    document.body.style.overflow = "hidden";
+  };
+
+  const closeModal = () => {
+    setModalInfo({ isOpen: false, title: "", content: null });
+    document.body.style.overflow = "auto";
+  };
+
   return (
     <div className="reservations-container">
       {rooms.map((room, index) => (
-        <ReservationCircle key={index} {...room} />
+        <ReservationCircle
+          key={index}
+          roomName={room.roomName}
+          totalSeats={room.totalSeats}
+          reservedSeats={room.reservedSeats}
+          onClick={() =>
+            openModal(
+              room.roomName,
+              `${room.reservedSeats} / ${room.totalSeats} seats reserved`,
+            )
+          }
+        />
       ))}
+      {modalInfo.isOpen && (
+        <Modal
+          title={modalInfo.title}
+          content={modalInfo.content}
+          onClose={closeModal}
+        />
+      )}
     </div>
   );
 }
 
-function ReservationCircle({ roomName, totalSeats, reservedSeats }) {
+function ReservationCircle({ roomName, totalSeats, reservedSeats, onClick }) {
   const availableSeats = totalSeats - reservedSeats;
   const percentage = (reservedSeats / totalSeats) * 100;
 
   return (
-    <div className="seat-reservation">
+    <div className="seat-reservation" onClick={onClick}>
       <div className="circle-container">
         <svg className="seat-circle" viewBox="0 0 36 36">
           <circle className="background-circle" cx="18" cy="18" r="15.915" />
@@ -173,13 +206,20 @@ function UserInfoContent() {
 }
 
 // 모달 컴포넌트
-function Modal({ title, content, closeModal }) {
+function Modal({ title, content, onClose }) {
   return (
     <div className="modal-bg">
       <div className="modal">
         <div className="modal-header">
           <h2>{title}</h2>
-          <span className="close" onClick={closeModal}>
+          <span
+            className="close"
+            onClick={() => {
+              // 디버깅 로그
+              console.log("Closing modal...");
+              onClose(); // onClose 호출
+            }}
+          >
             &times;
           </span>
         </div>
