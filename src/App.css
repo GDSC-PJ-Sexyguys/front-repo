@@ -156,48 +156,6 @@ body, html {
   font-weight: bold;
 }
 
-/* 게임 컨테이너 스타일 */
-.game-container {
-  display: flex;
-  flex-direction: column; /* 세로로 배치 */
-  align-items: center; /* 가운데 정렬 */
-  gap: 40px; /* 간격 설정 */
-}
-
-.game-item {
-  width: 90%;
-  height: 240px; /* 높이 설정 */
-  background-color: #cfe0f7;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.game-item.larger {
-  height: 240px; /* 크기 조정 */
-}
-
-/* 상품 컨테이너 스타일 */
-.product-container {
-  display: flex;
-  flex-direction: column; /* 세로로 배치 */
-  align-items: center; /* 가운데 정렬 */
-  gap: 40px; /* 간격 설정 */
-}
-
-.product-item {
-  width: 90%;
-  height: 240px; /* 높이 설정 */
-  background-color: #cfe0f7;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.product-item.larger {
-  height: 240px; /* 크기 조정 */
-}
-
 /* 내정보 */
 .user-info {
   display: flex;
@@ -239,6 +197,19 @@ body, html {
   background-color: #0d3668;
 }
 /* 모달 관련 스타일 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
 .modal-bg {
   position: fixed; /* 고정 위치 */
   top: 0;
@@ -255,9 +226,11 @@ body, html {
   background-color: #fff; /* 모달 배경색 */
   padding: 20px;
   width: 80%;
-  max-width: 400px;
+  max-width: 500px;
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
+  margin: auto;
+  position: relative;
 }
 
 .modal-header {
@@ -287,141 +260,101 @@ body, html {
 .modal-content {
   padding: 20px;
 }
-/*구매 버튼 */
-/* Pmodal.css */
 
-.pmodal-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
+input {
   width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
 }
 
-.pmodal {
-  background-color: #fff;
-  padding: 20px;
-  width: 80%;
-  max-width: 400px;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-.pmodal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #ccc;
-  padding-bottom: 10px;
-  margin-bottom: 10px;
-}
-
-.pmodal-header h2 {
-  margin: 0;
-  font-size: 1.5em;
-}
-
-.pclose {
-  cursor: pointer;
-  font-size: 1.5em;
-  color: #aaa;
-}
-
-.pclose:hover {
-  color: #555;
-}
-
-.pmodal-content {
-  padding: 20px;
-}
-
-.purchase-button {
-  width: 100%;
-  height: 40px;
-  background-color: #007bff;
+button {
+  padding: 10px 20px;
+  background-color: #235694;
   color: white;
   border: none;
   border-radius: 5px;
-  font-size: 1em;
   cursor: pointer;
-  transition: background-color 0.3s;
-  margin-top: 10px;
+  font-size: 1rem;
 }
 
-.purchase-button:hover {
-  background-color: #0056b3;
+button:hover {
+  background-color: #0d3668;
 }
-/*카드 게임 구현 */
-.memory-game {
+
+button:disabled {
+  background-color: #d1d1d1;
+  cursor: not-allowed;
+}
+
+input[type="text"] {
+  width: 80%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.modal input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+.modal button {
+  padding: 10px;
+  margin: 5px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.overlay {
+  background: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 학번 입력 모달 */
+.student-id-modal {
+  z-index: 2000;
+  position: absolute;
+}
+
+/* 좌석 그리드 */
+.seats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(30px, 1fr));
+  gap: 2px;
+}
+
+.seat {
+  width: 30px;
+  height: 30px;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100%;
-}
-
-.cards-container {
-  display: grid;
-  justify-content: center;
-  grid-template-columns: repeat(4, 1fr);
-  grid-gap: 10px;
-  width: 80%;
-  max-width: 600px;
-  margin: auto;
-}
-
-.card {
-  width: 100%;
-  padding-top: 100%; /* Aspect Ratio 1:1 */
-  position: relative;
-  cursor: pointer;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  overflow: hidden;
-  justify-content: center;
-  align-items: center;
-  font-size: 24px;
-}
-
-.card img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.concentration-game .card.flipped {
-  background-color: #a1c6f7;
+  font-size: 12px;
+  border-radius: 4px;
   color: white;
 }
 
-.concentration-game .card:hover {
-  background-color: #ddd;
-}
-/*구매 페이지 포인트 */
-.purchase-container {
-  position: relative;
+.seat.outlet {
+  background-color: #fbbe4b; /* 콘센트 자리 */
 }
 
-.points-container {
-  position: absolute;
-  right: 20px;
-  background-color: #cfe0f7;
-  padding: 10px;
-  border-radius: 5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.seat.normal {
+  background-color: lightblue; /* 일반 자리 */
 }
 
-.points-box {
-  display: flex;
-  align-items: center;
-}
-
-.points-number {
-  font-weight: bold;
-  margin-left: 5px;
+.seat.reserved {
+  background-color: #aaa; /* 예약된 자리 */
+  cursor: not-allowed;
 }
