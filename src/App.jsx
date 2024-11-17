@@ -1,14 +1,31 @@
 import React, { useState, useEffect } from "react";
 import "./App.css"; // CSS 파일 import
 import logo from "./logo.png";
-//import axios from "axios"; // Axios import
+import axios from "axios"; // Axios import
 
 function App() {
   const [activeMenu, setActiveMenu] = useState("홈");
+  const [rooms, setRooms] = useState([]);
 
+  // 서버에서 강의실 데이터 받아오기
+  useEffect(() => {
+    const fetchRoomData = async () => {
+      try {
+        const response = await axios.get("https://13.125.74.199:8080/"); // 실제 API URL로 변경
+        console.log("API Response:", response.data);
+        setRooms(response.data); // 받은 데이터를 rooms에 저장
+      } catch (error) {
+        console.error("Error fetching room data:", error);
+      }
+    };
+
+    fetchRoomData(); // 컴포넌트가 마운트될 때 데이터를 가져옵니다.
+  }, []);
+  
   const handleMenuClick = (menu) => {
     setActiveMenu(menu);
   };
+
 
   return (
     <div className="container">
