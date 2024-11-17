@@ -154,21 +154,94 @@ function SmallReservation() {
   const [modalInfo, setModalInfo] = useState({
     isOpen: false,
     title: "",
-    content: null,
+    roomIndex: null,
+    reservedSeats: 0,
+    totalSeats: 0,
   });
+
+  // 입력 필드 상태
+  const [studentId, setStudentId] = useState("");
+  const [reservedCount, setReservedCount] = useState(0);  // 예약할 사람 수
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+
+  // 소강의실 정보
   const rooms = [
     { roomName: "60주년510", totalSeats: 4, reservedSeats: 3 },
     { roomName: "60주년511", totalSeats: 4, reservedSeats: 0 },
   ];
 
-  const openModal = (title, content) => {
-    setModalInfo({ isOpen: true, title, content });
+  // 모달 열기
+  const openModal = (roomIndex, roomName, reservedSeats, totalSeats) => {
+    setModalInfo({
+      isOpen: true,
+      title: roomName,
+      roomIndex,
+      reservedSeats,
+      totalSeats,
+    });
     document.body.style.overflow = "hidden";
   };
 
+  // 모달 닫기
   const closeModal = () => {
-    setModalInfo({ isOpen: false, title: "", content: null });
+    setModalInfo({
+      isOpen: false,
+      title: "",
+      roomIndex: null,
+      reservedSeats: 0,
+      totalSeats: 0,
+    });
     document.body.style.overflow = "auto";
+    setStudentId(""); // 학번 초기화
+    setReservedCount(0); // 예약할 사람 수 초기화
+    setStartTime(""); // 시작시간 초기화
+    setEndTime(""); // 끝시간 초기화
+  };
+
+  // 30분 단위 시간으로 변경하는 함수
+  const adjustToHalfHour = (time) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    const adjustedMinutes = Math.floor(minutes / 30) * 30; // 30분 단위로 조정
+    return `${String(hours).padStart(2, "0")}:${String(adjustedMinutes).padStart(2, "0")}`;
+  };
+
+  // 시작 시간 설정
+  const handleStartTimeChange = (e) => {
+    const time = e.target.value;
+    setStartTime(adjustToHalfHour(time));
+  };
+
+  // 끝 시간 설정
+  const handleEndTimeChange = (e) => {
+    const time = e.target.value;
+    setEndTime(adjustToHalfHour(time));
+  };
+
+  // 예약 처리
+  const handleReservation = () => {
+    if (!studentId || !reservedCount || !startTime || !endTime) {
+      alert("모든 정보를 입력해주세요.");
+      return;
+    }
+
+    const updatedRooms = [...rooms];
+    const room = updatedRooms[modalInfo.roomIndex];
+
+    // 예약할 사람 수가 가용 좌석 수를 초과하지 않도록 확인
+    if (reservedCount > (room.totalSeats - room.reservedSeats)) {
+      alert("예약할 수 있는 좌석 수를 초과하였습니다.");
+      return;
+    }
+
+    // 예약 처리
+    room.reservedSeats += reservedCount;
+    setModalInfo({
+      ...modalInfo,
+      reservedSeats: room.reservedSeats,
+    });
+    alert(`예약이 완료되었습니다! 학번: ${studentId}, 예약 인원: ${reservedCount}, 시작시간: ${startTime}, 끝시간: ${endTime}`);
+    closeModal();
   };
 
   return (
@@ -180,22 +253,88 @@ function SmallReservation() {
           totalSeats={room.totalSeats}
           reservedSeats={room.reservedSeats}
           onClick={() =>
-            openModal(
-              room.roomName,
-              `${room.reservedSeats} / ${room.totalSeats} seats reserved`,
-            )
+            openModal(index, room.roomName, room.reservedSeats, room.totalSeats)
           }
         />
       ))}
+
       {modalInfo.isOpen && (
         <Modal
           title={modalInfo.title}
-          content={modalInfo.content}
           onClose={closeModal}
+          content={
+            <div className="reservation-form">
+              <label>
+                학번:
+                <input
+                  type="text"
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value)}
+                  placeholder="학번을 입력하세요"
+                />
+              </label>
+              <label>
+                예약할 사람 수:
+                <input
+                  type="number"
+                  value={reservedCount}
+                  onChange={(e) => setReservedCount(Number(e.target.value))}
+                  min="1"
+                  max={modalInfo.totalSeats - modalInfo.reservedSeats}
+                  placeholder="예약할 인원 수"
+                />
+              </label>
+              <label>
+                시작 시간:
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={handleStartTimeChange}
+                  required
+                />
+              </label>
+              <label>
+                끝 시간:
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={handleEndTimeChange}
+                  required
+                />
+              </label>
+              <button onClick={handleReservation}>예약</button>
+            </div>
+          }
         />
       )}
     </div>
   );
+}
+
+// 좌석 데이터를 예약 시간 추가
+function createRoom(roomName, totalSeats, reservedSeats) {
+  const seats = Array.from({ length: totalSeats }, (_, index) => ({
+    id: index + 1,
+    type: Math.random() < 0.3 ? "outlet" : "normal", 
+    reserved: index < reservedSeats,
+    reservedUntil: index < reservedSeats ? getReservationEndTime() : null, // 예약 종료 시간
+  }));
+  return { roomName, totalSeats, reservedSeats, seats };
+}
+
+// 예약 종료 시간을 랜덤으로 설정하는 함수 (예시)
+function getReservationEndTime() {
+  const now = new Date();
+  const endTime = new Date(now.getTime() + Math.random() * 60 * 60 * 1000); // 1시간 이내로 랜덤 설정
+  return endTime;
+}
+
+// 예약된 좌석에 대해 남은 시간을 계산하는 함수
+function calculateTimeLeft(reservedUntil) {
+  if (!reservedUntil) return 0; // 예약 종료 시간이 없으면 0으로 처리
+  const now = new Date();
+  const timeLeft = reservedUntil - now;
+  return timeLeft > 0 ? timeLeft : 0; // 남은 시간이 0 미만일 경우 0으로 설정
 }
 
 // 좌석 상태를 보여주는 컴포넌트
@@ -215,6 +354,16 @@ function SeatsGrid({ seats, onSeatClick }) {
           onClick={() => !seat.reserved && onSeatClick(seat.id)}
         >
           {seat.id}
+          {seat.reserved && (
+            <div className="reservation-gauge">
+              <div
+                className="gauge"
+                style={{
+                  width: `${(calculateTimeLeft(seat.reservedUntil) / (60 * 60 * 1000)) * 100}%`, // 남은 시간 비율
+                }}
+              />
+            </div>
+          )}
         </div>
       ))}
     </div>
