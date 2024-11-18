@@ -7,21 +7,6 @@ function App() {
   const [activeMenu, setActiveMenu] = useState("홈");
   const [rooms, setRooms] = useState([]);
 
-  // 서버에서 강의실 데이터 받아오기
-  useEffect(() => {
-    const fetchRoomData = async () => {
-      try {
-        const response = await axios.get("http://54.180.227.155:8080/"); // 실제 API URL로 변경
-        console.log("API Response:", response.data);
-        //setRooms(response.data); // 받은 데이터를 rooms에 저장
-      } catch (error) {
-        console.error("Error fetching room data:", error);
-      }
-    };
-
-    fetchRoomData(); // 컴포넌트가 마운트될 때 데이터를 가져옵니다.
-  }, []);
-
   const handleMenuClick = (menu) => {
     setActiveMenu(menu);
   };
@@ -110,6 +95,29 @@ function BigReservation() {
     document.body.style.overflow = modalInfo.isOpen ? "hidden" : "auto";
   };
 
+  const openTimeModal = async (seatId) => {
+    try {
+      // 서버에서 남은 시간 가져오기
+      const response = await axios.get(`/api/seats/${seatId}`);
+      setTimeModal({
+        isOpen: true,
+        seatId,
+        remainingTime: response.data.remainingTime, // 서버에서 받은 남은 시간
+      });
+    } catch (error) {
+      console.error("Error fetching remaining time:", error);
+      alert("남은 시간을 가져오는 데 실패했습니다.");
+    }
+  };
+
+  const closeTimeModal = () => {
+    setTimeModal({
+      isOpen: false,
+      seatId: null,
+      remainingTime: null,
+    });
+  };
+
   const handleReservation = (studentId) => {
     if (!studentId.trim()) {
       alert("학번을 입력해주세요.");
@@ -183,6 +191,7 @@ function SmallReservation() {
   });
 
   // 입력 필드 상태
+  const [reservationViewOpen, setReservationViewOpen] = useState(false);
   const [studentId, setStudentId] = useState("");
   const [reservedCount, setReservedCount] = useState(0); // 예약할 사람 수
   const [startTime, setStartTime] = useState("");
@@ -268,6 +277,22 @@ function SmallReservation() {
     );
     closeModal();
   };
+  //예약 정보 확인
+
+  const openReservationView = () => {
+    setReservationViewOpen(true);
+  };
+
+  // 예약 정보 확인 모달 닫기
+  const closeReservationView = () => {
+    setReservationViewOpen(false);
+  };
+
+  const reservationData = {
+    9: [0, 1, 1, 0, 0], // 9시: [가능, 예약됨, 예약됨, 가능, 가능]
+    10: [1, 1, 0, 0, 1], // 10시
+    11: [0, 0, 1, 1, 0], // 11시
+  };
 
   return (
     <div className="reservations-container">
@@ -328,6 +353,33 @@ function SmallReservation() {
                 />
               </label>
               <button onClick={handleReservation}>예약</button>
+              <button onClick={openReservationView}>예약 정보 확인</button>
+            </div>
+          }
+        />
+      )}
+      {/*예약정보 확인 모달 띄우기*/}
+      {reservationViewOpen && (
+        <Modal
+          title="예약 정보"
+          onClose={closeReservationView}
+          content={
+            <div className="reservation-status">
+              {Object.keys(reservationData).map((hour) => (
+                <div key={hour} className="reservation-bar">
+                  <span className="hour-label">{hour}:00</span>
+                  <div className="segments">
+                    {reservationData[hour].map((status, index) => (
+                      <div
+                        key={index}
+                        className={`segment ${
+                          status === 1 ? "reserved" : "available"
+                        }`}
+                      ></div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           }
         />
@@ -376,7 +428,7 @@ function SeatsGrid({ seats, onSeatClick }) {
                 ? "outlet"
                 : "normal"
           }`}
-          onClick={() => !seat.reserved && onSeatClick(seat.id)}
+          onClick={() => onSeatClick(seat.id)}
         >
           {seat.id}
           {seat.reserved && (

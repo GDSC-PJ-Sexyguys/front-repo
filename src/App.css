@@ -420,3 +420,35 @@ button:hover {
   height: 100%;
   background-color: orange; /* 시간 남은 부분을 오렌지로 표시 */
 }
+/*예약 정보 확인 모달*/
+.reservation-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.hour-label {
+  width: 50px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.segments {
+  display: flex;
+  flex: 1;
+}
+
+.segment {
+  width: 20%;
+  height: 20px;
+  margin-right: 2px;
+  border-radius: 2px;
+}
+
+.segment.available {
+  background-color: #00aaff; /* 파란색 */
+}
+
+.segment.reserved {
+  background-color: #000; /* 검은색 */
+}
