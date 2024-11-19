@@ -288,12 +288,36 @@ function SmallReservation() {
     setReservationViewOpen(false);
   };
 
-  const reservationData = {
-    9: [0, 1, 1, 0, 0], // 9시: [가능, 예약됨, 예약됨, 가능, 가능]
-    10: [1, 1, 0, 0, 1], // 10시
-    11: [0, 0, 1, 1, 0], // 11시
+  const reservationData = [
+    { start: "09:00", end: "12:30" }, // 예약 구간
+    { start: "14:00", end: "15:30" },
+    { start: "18:00", end: "20:00" },
+  ];
+
+  const generateTimeSlots = () => {
+    const timeSlots = [];
+    for (let hour = 0; hour < 24; hour++) {
+      timeSlots.push({
+        time: `${String(hour).padStart(2, "0")}:00`,
+        isHourStart: true, // 시간의 시작인지 여부
+      });
+      timeSlots.push({
+        time: `${String(hour).padStart(2, "0")}:30`,
+        isHourStart: false,
+      });
+    }
+    return timeSlots;
   };
 
+  // 특정 시간대가 예약되었는지 확인
+  const isTimeReserved = (time) => {
+    for (const reservation of reservationData) {
+      if (time >= reservation.start && time < reservation.end) {
+        return true; // 예약됨
+      }
+    }
+    return false; // 사용 가능
+  };
   return (
     <div className="reservations-container">
       {rooms.map((room, index) => (
@@ -307,7 +331,6 @@ function SmallReservation() {
           }
         />
       ))}
-
       {modalInfo.isOpen && (
         <Modal
           title={modalInfo.title}
@@ -360,29 +383,28 @@ function SmallReservation() {
       )}
       {/*예약정보 확인 모달 띄우기*/}
       {reservationViewOpen && (
-        <Modal
-          title="예약 정보"
-          onClose={closeReservationView}
-          content={
-            <div className="reservation-status">
-              {Object.keys(reservationData).map((hour) => (
-                <div key={hour} className="reservation-bar">
-                  <span className="hour-label">{hour}:00</span>
-                  <div className="segments">
-                    {reservationData[hour].map((status, index) => (
-                      <div
-                        key={index}
-                        className={`segment ${
-                          status === 1 ? "reserved" : "available"
-                        }`}
-                      ></div>
-                    ))}
-                  </div>
+        <div className="reservation-check-modal">
+          <div className="reservation-check-content">
+            <h2>예약 정보</h2>
+            <div className="reservation-bar">
+              {generateTimeSlots().map((slot, index) => (
+                <div
+                  key={index}
+                  className={`time-slot ${
+                    isTimeReserved(slot.time) ? "reserved" : "available"
+                  }`}
+                >
+                  {slot.isHourStart && (
+                    <span className="time-label">
+                      {slot.time.split(":")[0]}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
-          }
-        />
+            <button onClick={closeReservationView}>닫기</button>
+          </div>
+        </div>
       )}
     </div>
   );
