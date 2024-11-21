@@ -4,7 +4,7 @@ import logo from "./logo.png";
 import axios from "axios"; // Axios import
 
 const axiosInstance = axios.create({
-  baseURL: "http://13.125.239.73:8080/", // API의 기본 URL
+  baseURL: "/api", // 프록시 설정에 맞게 수정
   headers: {
     "Content-Type": "application/json",
   },
@@ -228,6 +228,8 @@ function BigReservation() {
   );
 }
 
+//소강의실 예약
+
 function SmallReservation() {
   const [modalInfo, setModalInfo] = useState({
     isOpen: false,
@@ -237,12 +239,178 @@ function SmallReservation() {
     totalSeats: 0,
   });
 
-  // 입력 필드 상태
+  const [rooms, setRooms] = useState([]); // 강의실 정보 상태
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [reservationData, setReservationData] = useState([]); // 특정 강의실 예약 상태 check
   const [reservationViewOpen, setReservationViewOpen] = useState(false);
   const [studentId, setStudentId] = useState("");
-  const [reservedCount, setReservedCount] = useState(0); // 예약할 사람 수
+  const [reservedCount, setReservedCount] = useState(0);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+
+  const fetchRooms = async (setRooms, setLoading, setError) => {
+    try {
+      const response = await axiosInstance.get(
+        "/small-room/reservations/search",
+        {
+          params: {
+            buildingName: "60주년",
+            roomName: "508호",
+          },
+        },
+      );
+
+      console.log("응답 데이터:", response.data);
+
+      const currentTime = new Date().toISOString(); // 현재 시간 (ISO 포맷)
+
+      // 응답 데이터를 필터링하여 현재 시간 범위에 있는 데이터를 선택
+      let filteredRooms = response.data
+        .filter((reservation) => {
+          return (
+            reservation.startTime <= currentTime &&
+            reservation.endTime >= currentTime
+          );
+        })
+        .map((reservation) => ({
+          buildingName: reservation.buildingName,
+          roomName: reservation.roomName,
+          startTime: reservation.startTime,
+          endTime: reservation.endTime,
+          studentId: reservation.studentId,
+          partySize: reservation.partySize,
+        }));
+
+      // 필터링 결과가 없는 경우 기본값 추가
+      if (filteredRooms.length === 0) {
+        filteredRooms = [
+          {
+            buildingName: "60주년",
+            roomName: "508호",
+            startTime: "0",
+            endTime: "0",
+            studentId: 0,
+            partySize: 0,
+          },
+        ];
+      }
+
+      setRooms(filteredRooms);
+      console.log("필터링된 강의실 데이터:", filteredRooms);
+    } catch (error) {
+      console.error("에러 발생:", error.message);
+      if (error.response) {
+        console.error("응답 데이터:", error.response.data);
+        console.error("상태 코드:", error.response.status);
+      }
+      setError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRoomReservations = async (buildingName, roomName) => {
+    try {
+      const response = await axiosInstance.get(
+        "/small-room/reservations/daily-schedule",
+        {
+          params: { buildingName, roomName },
+        },
+      );
+      setReservationData(response.data);
+    } catch (error) {
+      console.error("예약 데이터를 가져오지 못했습니다:", error);
+    }
+  };
+
+  // 예약 요청 처리 함수
+  const handleReservation = async () => {
+    if (!studentId || !reservedCount || !startTime || !endTime) {
+      alert("모든 정보를 입력해주세요.");
+      return;
+    }
+
+    const room = rooms[modalInfo.roomIndex];
+
+    // 30분 단위로 시간 조정
+    const adjustToHalfHour = (time) => {
+      const [hour, minute] = time.split(":").map(Number);
+
+      let adjustedMinute;
+      if (minute > 0 && minute <= 30) {
+        adjustedMinute = "30"; // 1~30분은 30분으로 조정
+      } else {
+        adjustedMinute = "00"; // 31~59분 및 0분은 0으로 조정
+      }
+
+      const adjustedHour =
+        adjustedMinute === "00" && minute > 30 ? (hour + 1) % 24 : hour;
+
+      return `${String(adjustedHour).padStart(2, "0")}:${adjustedMinute}`;
+    };
+
+    const adjustedStartTime = adjustToHalfHour(startTime);
+    const adjustedEndTime = adjustToHalfHour(endTime);
+
+    // 예약 시간이 유효한지 확인
+    if (adjustedStartTime >= adjustedEndTime) {
+      alert("시작 시간이 종료 시간보다 빠를 수 없습니다.");
+      return;
+    }
+
+    // 인원 초과 확인
+    if (reservedCount > modalInfo.totalSeats) {
+      alert("예약 인원이 강의실 수용 인원을 초과합니다.");
+      return;
+    }
+
+    // 예약 충돌 확인
+    const todayDate = new Date().toISOString().split("T")[0];
+    const startDateTime = new Date(
+      `${todayDate}T${adjustedStartTime}:00`,
+    ).toISOString();
+    const endDateTime = new Date(
+      `${todayDate}T${adjustedEndTime}:00`,
+    ).toISOString();
+
+    const hasConflict = reservationData.some((reservation) => {
+      return (
+        (startDateTime >= reservation.startTime &&
+          startDateTime < reservation.endTime) ||
+        (endDateTime > reservation.startTime &&
+          endDateTime <= reservation.endTime) ||
+        (startDateTime <= reservation.startTime &&
+          endDateTime >= reservation.endTime)
+      );
+    });
+
+    if (hasConflict) {
+      alert("이미 예약된 시간이 포함되어 있습니다.");
+      return;
+    }
+
+    // 서버에 예약 요청
+    try {
+      const response = await axiosInstance.post("/small-room/reservations", {
+        bookerStudentId: parseInt(studentId, 10),
+        buildingName: "60주년",
+        roomName: room.roomName,
+        startTime: startDateTime,
+        endTime: endDateTime,
+        partySize: reservedCount,
+      });
+
+      alert(`예약이 완료되었습니다! 예약 ID: ${response.data}`);
+      closeModal();
+      fetchRooms(); // 예약 완료 후 강의실 정보 다시 가져오기
+    } catch (error) {
+      console.error("예약 요청 중 오류 발생:", error);
+      if (error.response) {
+        alert(error.response.data.message || "예약에 실패했습니다.");
+      }
+    }
+  };
 
   // 모달 열기
   const openModal = (roomIndex, roomName, reservedSeats, totalSeats) => {
@@ -253,7 +421,7 @@ function SmallReservation() {
       reservedSeats,
       totalSeats,
     });
-    document.body.style.overflow = "hidden";
+    fetchRoomReservations("60주년", roomName);
   };
 
   // 모달 닫기
@@ -263,84 +431,38 @@ function SmallReservation() {
       title: "",
       roomIndex: null,
       reservedSeats: 0,
-      totalSeats: 0,
+      totalSeats: 4,
     });
-    document.body.style.overflow = "auto";
-    setStudentId(""); // 학번 초기화
-    setReservedCount(0); // 예약할 사람 수 초기화
-    setStartTime(""); // 시작시간 초기화
-    setEndTime(""); // 끝시간 초기화
+    setStudentId("");
+    setReservedCount(0);
+    setStartTime("");
+    setEndTime("");
   };
 
-  // 30분 단위 시간으로 변경하는 함수
-  const adjustToHalfHour = (time) => {
-    const [hours, minutes] = time.split(":").map(Number);
-    const adjustedMinutes = Math.floor(minutes / 30) * 30; // 30분 단위로 조정
-    return `${String(hours).padStart(2, "0")}:${String(adjustedMinutes).padStart(2, "0")}`;
-  };
-
-  // 시작 시간 설정
-  const handleStartTimeChange = (e) => {
-    const time = e.target.value;
-    setStartTime(adjustToHalfHour(time));
-  };
-
-  // 끝 시간 설정
-  const handleEndTimeChange = (e) => {
-    const time = e.target.value;
-    setEndTime(adjustToHalfHour(time));
-  };
-
-  // 예약 처리
-  const handleReservation = () => {
-    if (!studentId || !reservedCount || !startTime || !endTime) {
-      alert("모든 정보를 입력해주세요.");
-      return;
-    }
-
-    const updatedRooms = [...rooms];
-    const room = updatedRooms[modalInfo.roomIndex];
-
-    // 예약할 사람 수가 가용 좌석 수를 초과하지 않도록 확인
-    if (reservedCount > room.totalSeats - room.reservedSeats) {
-      alert("예약할 수 있는 좌석 수를 초과하였습니다.");
-      return;
-    }
-
-    // 예약 처리
-    room.reservedSeats += reservedCount;
-    setModalInfo({
-      ...modalInfo,
-      reservedSeats: room.reservedSeats,
-    });
-    alert(
-      `예약이 완료되었습니다! 학번: ${studentId}, 예약 인원: ${reservedCount}, 시작시간: ${startTime}, 끝시간: ${endTime}`,
-    );
-    closeModal();
-  };
-  //예약 정보 확인
-
-  const openReservationView = () => {
-    setReservationViewOpen(true);
-  };
+  // 예약 정보 확인 모달 열기
+  const openReservationView = () => setReservationViewOpen(true);
 
   // 예약 정보 확인 모달 닫기
-  const closeReservationView = () => {
-    setReservationViewOpen(false);
+  const closeReservationView = () => setReservationViewOpen(false);
+
+  // 시간 예약 상태 확인
+  const isTimeReserved = (time) => {
+    const today = new Date().toISOString().split("T")[0]; // 오늘 날짜
+    return reservationData.some(
+      (reservation) =>
+        reservation.startTime.startsWith(today) &&
+        reservation.startTime <= `${today}T${time}:00` &&
+        reservation.endTime > `${today}T${time}:00`,
+    );
   };
 
-  const reservationData = [
-    { start: "09:00", end: "12:30" }, // 예약 구간
-    { start: "14:00", end: "15:30" },
-    { start: "18:00", end: "20:00" },
-  ];
-
+  // 예약 시간 슬롯 생성
   const generateTimeSlots = () => {
     const timeSlots = [];
     for (let hour = 0; hour < 24; hour++) {
       timeSlots.push({
         time: `${String(hour).padStart(2, "0")}:00`,
-        isHourStart: true, // 시간의 시작인지 여부
+        isHourStart: true,
       });
       timeSlots.push({
         time: `${String(hour).padStart(2, "0")}:30`,
@@ -350,23 +472,25 @@ function SmallReservation() {
     return timeSlots;
   };
 
-  // 특정 시간대가 예약되었는지 확인
-  const isTimeReserved = (time) => {
-    for (const reservation of reservationData) {
-      if (time >= reservation.start && time < reservation.end) {
-        return true; // 예약됨
-      }
-    }
-    return false; // 사용 가능
+  // 초기 데이터 로드
+  useEffect(() => {
+    fetchRooms(setRooms, setLoading, setError);
+  }, []);
+  //30분단위로 시간을 맞춰줌.
+  const adjustToHalfHour = (time) => {
+    const [hour, minute] = time.split(":").map(Number);
+    const adjustedMinute = minute < 30 ? "30" : "00";
+    const adjustedHour = minute < 30 ? hour : (hour + 1) % 24;
+    return `${String(adjustedHour).padStart(2, "0")}:${adjustedMinute}`;
   };
   return (
     <div className="reservations-container">
       {rooms.map((room, index) => (
         <ReservationCircle
           key={index}
-          roomName={room.roomName}
-          totalSeats={room.totalSeats}
-          reservedSeats={room.reservedSeats}
+          roomName={`60주년-${room.roomName}`}
+          totalSeats={4}
+          reservedSeats={room.partySize}
           onClick={() =>
             openModal(index, room.roomName, room.reservedSeats, room.totalSeats)
           }
@@ -395,7 +519,6 @@ function SmallReservation() {
                   onChange={(e) => setReservedCount(Number(e.target.value))}
                   min="1"
                   max={modalInfo.totalSeats - modalInfo.reservedSeats}
-                  placeholder="예약할 인원 수"
                 />
               </label>
               <label>
@@ -403,8 +526,10 @@ function SmallReservation() {
                 <input
                   type="time"
                   value={startTime}
-                  onChange={handleStartTimeChange}
-                  required
+                  step="1800" // 30분 단위 (30분 = 1800초)
+                  onChange={(e) =>
+                    setStartTime(adjustToHalfHour(e.target.value))
+                  }
                 />
               </label>
               <label>
@@ -412,8 +537,8 @@ function SmallReservation() {
                 <input
                   type="time"
                   value={endTime}
-                  onChange={handleEndTimeChange}
-                  required
+                  step="1800" // 30분 단위
+                  onChange={(e) => setEndTime(adjustToHalfHour(e.target.value))}
                 />
               </label>
               <button onClick={handleReservation}>예약</button>
@@ -422,11 +547,10 @@ function SmallReservation() {
           }
         />
       )}
-      {/*예약정보 확인 모달 띄우기*/}
       {reservationViewOpen && (
         <div className="reservation-check-modal">
           <div className="reservation-check-content">
-            <h2>예약 정보</h2>
+            <h2>오늘의 예약 정보</h2>
             <div className="reservation-bar">
               {generateTimeSlots().map((slot, index) => (
                 <div
