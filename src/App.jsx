@@ -68,12 +68,28 @@ function BigReservation() {
 
   // 각 방의 좌석 데이터를 동적으로 생성
   const buildingInfo = [
-    { buildingName: "하이테크", roomName: "120", totalSeats: 60, seats: [] },
-    { buildingName: "하이테크", roomName: "220", totalSeats: 40, seats: [] },
-    { buildingName: "하이테크", roomName: "224", totalSeats: 60, seats: [] },
+    { buildingName: "하이테크", roomName: "120", totalSeats: 60 },
+    { buildingName: "하이테크", roomName: "220", totalSeats: 40 },
+    { buildingName: "하이테크", roomName: "224", totalSeats: 60 },
   ];
 
   useEffect(() => {
+    const savedRooms = localStorage.getItem("rooms");
+    if (savedRooms) {
+      setRooms(JSON.parse(savedRooms));
+    } else {
+      fetchOccupiedSeats();
+    }
+  }, []);
+
+  // rooms 상태 변경 시 로컬 스토리지에 저장
+  useEffect(() => {
+    if (rooms.length > 0) {
+      localStorage.setItem("rooms", JSON.stringify(rooms));
+    }
+  }, [rooms]);
+
+  
     const fetchOccupiedSeats = async () => {
       try {
         const responses = await Promise.all(
@@ -91,7 +107,7 @@ function BigReservation() {
           const reservedSeats = responses[index].data.occupiedSeats || [];
           const seats = Array.from({ length: building.totalSeats }, (_, i) => ({
             id: i + 1,
-            reserved: reservedSeats.includes(i + 1), // 점유 여부 체크
+            reserved: reservedSeats.includes(i + 1),
           }));
 
           return {
@@ -101,15 +117,15 @@ function BigReservation() {
           };
         });
 
-        setRooms(updatedRooms);
+        setRooms(updatedRooms); // 상태 업데이트
+        // 로컬 스토리지에 상태 저장
+        localStorage.setItem("rooms", JSON.stringify(updatedRooms));
       } catch (error) {
         console.error("Error fetching occupied seats:", error);
-        alert("점유된 좌석 수를 가져오는 데 실패했습니다.");
+        alert("좌석 정보를 불러오는 데 실패했습니다.");
       }
     };
 
-    fetchOccupiedSeats();
-  }, []);
 
   const openModal = (roomName, seats) => {
     setModalInfo({ isOpen: true, title: roomName, seats });
@@ -131,17 +147,77 @@ function BigReservation() {
   };
 
   const openTimeModal = async (seatId) => {
-    try {
-      // 서버에서 남은 시간 가져오기
-      const response = await axios.get(`/api/seats/${seatId}`);
-      setTimeModal({
-        isOpen: true,
-        seatId,
-        remainingTime: response.data.remainingTime, // 서버에서 받은 남은 시간
-      });
-    } catch (error) {
-      console.error("Error fetching remaining time:", error);
-      alert("남은 시간을 가져오는 데 실패했습니다.");
+    const { seats } = modalInfo;
+    const seat = seats.find((seat) => seat.id === seatId);
+
+    if (seat && seat.reserved) {
+      // 예약된 좌석의 정보 가져오기 (예약 기록)
+      try {
+        const response = await axios.get("/large-room/tickets/search", {
+          params: {
+            seatNumber: seatId, // 좌석 번호로 예약 기록 찾기
+          },
+        });
+
+        // 응답 데이터 확인
+        console.log("응답 데이터:", response.data);
+
+        // 응답에서 예약 데이터를 가져옴
+        const reservation = response.data;
+
+        // 예약 시간 정보 확인
+        if (!reservation.START_TIME || !reservation.END_TIME) {
+          alert("예약 시간 정보가 없습니다.");
+          return;
+        }
+
+        // TIMESTAMP(6) 형식을 yyyy-MM-dd HH:mm:ss.SSSSSS로 변환
+        const formatDate = (dateStr) => {
+          const date = new Date(dateStr);
+          const year = date.getFullYear().toString().slice(-2); //년도 뒤에 두자리
+          const month = ("0" + (date.getMonth() + 1)).slice(-2); //월 2자리 (01, 02 ... 12)
+          const day = ("0" + date.getDate()).slice(-2); //일 2자리 (01, 02 ... 31)
+          const hour = ("0" + date.getHours()).slice(-2); //시 2자리 (00, 01 ... 23)
+          const minute = ("0" + date.getMinutes()).slice(-2); //분 2자리 (00, 01 ... 59)
+          const second = ("0" + date.getSeconds()).slice(-2); //초 2자리 (00, 01 ... 59)
+          const millisecond = ("000000" + date.getMilliseconds()).slice(-6); //마이크로초
+
+          return `${year}-${month}-${day} ${hour}:${minute}:${second}.${millisecond}`;
+        };
+
+        // 시작 시간과 종료 시간 포맷팅
+        let startTime = formatDate(reservation.START_TIME); 
+        let endTime = formatDate(reservation.END_TIME);
+
+        console.log("Formatted Start Time:", startTime);
+        console.log("Formatted End Time:", endTime);
+
+        // Date 객체로 변환
+        const startDate = new Date(startTime);
+        const endDate = new Date(endTime);
+
+        // 유효한 날짜인지 확인
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          alert("유효하지 않은 예약 시간입니다.");
+          return;
+        }
+
+        // 현재 시간과 비교하여 남은 시간 계산
+        const currentTime = new Date();
+        const remainingTime = Math.max((endDate - currentTime) / 1000, 0); // 초 단위로 남은 시간
+        const remainingMinutes = remainingTime / 60; // 분 단위로 변경
+
+        if (remainingTime > 0) {
+          alert(`남은 시간: ${Math.ceil(remainingMinutes)}분`);
+        } else {
+          alert("예약 시간이 만료되었습니다.");
+        }
+      } catch (error) {
+        console.error("예약 정보를 불러오는 데 실패했습니다.", error);
+        alert("예약 정보를 불러오는 데 실패했습니다.");
+      }
+    } else {
+      alert("예약되지 않은 좌석입니다.");
     }
   };
 
@@ -155,38 +231,36 @@ function BigReservation() {
 
   const reserveSeat = async (studentId, buildingName, roomName, seatNumber) => {
     try {
-      const response = await axiosInstance.post("/large-room/tickets", {
+      await axiosInstance.post("/large-room/tickets", {
         bookerStudentId: studentId,
         buildingName,
         roomName,
         seatNumber,
       });
 
-      // 상태 업데이트: 예약 성공한 좌석을 회색으로 변경
-      setRooms((prevRooms) =>
-        prevRooms.map((room) => {
-          if (room.roomName === roomName) {
-            return {
+      // 서버 응답에 따라 상태 업데이트
+      const updatedRooms = rooms.map((room) =>
+        room.roomName === roomName
+          ? {
               ...room,
-              reservedSeats: room.reservedSeats + 1, // 예약된 좌석 수 증가
+              reservedSeats: room.reservedSeats + 1,
               seats: room.seats.map((seat) =>
-                seat.id === seatNumber ? { ...seat, reserved: true } : seat,
+                seat.id === seatNumber ? { ...seat, reserved: true } : seat
               ),
-            };
-          }
-          return room;
-        }),
+            }
+          : room
       );
 
-      alert(`좌석이 성공적으로 예약되었습니다! 티켓 ID: ${response.data}`);
-    } catch (error) {
-      if (error.response && error.response.data) {
-        alert(`예약 실패: ${error.response.data.message}`);
-      } else {
-        alert("예약 중 오류가 발생했습니다.");
-      }
-    }
-  };
+      // 클라이언트 상태와 로컬 스토리지에 동기화
+          setRooms(updatedRooms);
+          localStorage.setItem("rooms", JSON.stringify(updatedRooms));
+
+          alert("좌석이 성공적으로 예약되었습니다.");
+        } catch (error) {
+          console.error("예약 실패:", error);
+          alert("예약 중 오류가 발생했습니다.");
+        }
+      };
 
   const handleReservation = (studentId) => {
     const { roomIndex, seatId } = studentIdModal;
@@ -204,15 +278,19 @@ function BigReservation() {
 
   return (
     <div className="reservations-container">
-      {rooms.map((room, index) => (
-        <ReservationCircle
-          key={index}
-          roomName={`하이테크${room.roomName}`}
-          totalSeats={room.totalSeats}
-          reservedSeats={room.reservedSeats}
-          onClick={() => openModal(room.roomName, room.seats)}
-        />
-      ))}
+      {rooms.length === 0 ? (
+        <p>좌석 데이터를 불러오는 중입니다...</p>
+      ) : (
+        rooms.map((room, index) => (
+          <ReservationCircle
+            key={index}
+            roomName={`하이테크${room.roomName}`}
+            totalSeats={room.totalSeats}
+            reservedSeats={room.reservedSeats}
+            onClick={() => openModal(room.roomName, room.seats)}
+          />
+        ))
+      )}
 
       {modalInfo.isOpen && (
         <Modal
@@ -327,7 +405,6 @@ function SmallReservation() {
       setLoading(false);
     }
   };
-
   const fetchRoomReservations = async (buildingName, roomName) => {
     try {
       const response = await axiosInstance.get(
@@ -705,13 +782,31 @@ function StudentIdModal({ onSubmit, onClose }) {
   );
 }
 
+//내 좌석
 function UserInfoContent() {
-  const [name, setName] = useState("");
-  const [studentId, setStudentId] = useState("");
+  const [Student_Id, setStudentId] = useState("");
 
-  const handleLogin = () => {
-    alert(`학번: ${studentId}`);
-    // 로그인 로직 추가
+  const handleLogin = async () => {
+    try {
+      // 학번을 기반으로 대강의실 좌석 정보를 조회하는 API 호출
+      const response = await axios.get("/large-room/tickets/search", {
+        params: { Student_Id },
+      });
+
+      // API 응답에서 학번에 해당하는 좌석 정보 확인
+      console.log(Student_Id);
+      if (response.data && response.data.seatData) {
+        const { Building_Name, Room_Name, Seat_Number } = response.data.seat;
+        alert(
+          `학번: ${Student_Id}\n강의실: ${Building_Name} ${Room_Name}\n좌석 번호: ${Seat_Number}`
+        );
+      } else {
+        alert("해당 학번으로 예약된 좌석이 없습니다.");
+      }
+    } catch (error) {
+      console.error("좌석 조회 실패:", error);
+      alert("좌석 정보를 불러오는 데 실패했습니다.");
+    }
   };
 
   return (
@@ -720,7 +815,7 @@ function UserInfoContent() {
       <input
         type="text"
         placeholder="학번"
-        value={studentId}
+        value={Student_Id}
         onChange={(e) => setStudentId(e.target.value)}
         className="input-field"
       />
